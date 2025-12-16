@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, euint32, InEuint64, InEuint32} from "@fhenixprotocol/cofhe-contracts/FHE.sol";
+import {FHE, euint64, euint32, ebool, InEuint64, InEuint32} from "@fhenixprotocol/cofhe-contracts/FHE.sol";
 
 /// @title PrivTWAPLib
 /// @notice Library for privacy-preserving Time-Weighted Average Price calculations
@@ -42,7 +42,7 @@ library PrivTWAPLib {
         oracle.previous.timestamp = FHE.asEuint32(initialTimestamp);
         oracle.previous.initialized = true;
         
-        oracle.lastUpdateTime = FHE.asEuint64(initialTimestamp);
+        oracle.lastUpdateTime = FHE.asEuint64(FHE.asEuint32(initialTimestamp));
     }
 
     /// @notice Update the oracle with a new encrypted price observation
@@ -123,16 +123,16 @@ library PrivTWAPLib {
     function exceedsThreshold(
         PrivateOracle storage oracle,
         euint64 threshold
-    ) internal view returns (bool) {
+    ) internal view returns (ebool) {
         if (!isReady(oracle)) {
-            return false;
+            return FHE.asEbool(false);
         }
 
         euint64 twap = getEncryptedTWAP(oracle);
         
         // Use FHE comparison - returns encrypted boolean
         // For action triggers, we'd need to decrypt this or use it in encrypted control flow
-        return FHE.decrypt(FHE.gt(twap, threshold));
+        return FHE.gt(twap, threshold);
     }
 
     /// @notice Calculate percentage deviation between current price and TWAP
